@@ -45,7 +45,7 @@ while True:
 		print('Image width: ',width,"\t Image height: ",height)
 		printedFrameSize = True
 
-	# resize the frame, draw the target area, draw a grid
+	# resize the frame, draw the target area
 	frame = imutils.resize(frame, width=500)
 	cv2.rectangle(frame, (150, 200), (210, 260), (255, 255, 255), 2)
 
