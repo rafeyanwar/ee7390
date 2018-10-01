@@ -14,7 +14,7 @@ ap.add_argument("-a", "--min-area", type=int, default=500, help="minimum area si
 args = vars(ap.parse_args())
 
 if args.get("video", None) is None:
-	vs = VideoStream(src=0).start()
+	vs = VideoStream(src=1).start()
 	time.sleep(2.0)
 	print('Using a video stream.')
 
@@ -24,6 +24,12 @@ else:
 
 firstFrame = None
 printedFrameSize = False
+
+# The subsection of the image near the feeder to look for motion
+xLower = 150
+xUpper = 200
+yLower = 210
+yUpper = 260
 
 # loop over the frames of the video
 while True:
@@ -47,10 +53,12 @@ while True:
 
 	# resize the frame, draw the target area
 	frame = imutils.resize(frame, width=500)
-	cv2.rectangle(frame, (150, 200), (210, 260), (255, 255, 255), 2)
+	cv2.rectangle(frame, (xLower, xUpper), (yLower, yUpper), (255, 255, 255), 2)
 
-	# greyscale and blur the frame
-	gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+	# get relevant section of image, greyscale and blur it
+	feederSection = frame[yLower:yUpper, xLower:xUpper]
+	cv2.imshow("feedersection", feederSection)
+	gray = cv2.cvtColor(feederSection, cv2.COLOR_BGR2GRAY)
 	gray = cv2.GaussianBlur(gray, (21, 21), 0)
 
 	# if the first frame is None, initialize it
@@ -79,7 +87,11 @@ while True:
 		# compute the bounding box for the contour, draw it on the frame,
 		# and update the text
 		(x, y, w, h) = cv2.boundingRect(c)
-		cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
+		cv2.rectangle(frame, (x + xLower, y + yLower), (x + w + xLower, y + h + yLower), (0, 255, 0), 2)
+		cv2.putText(frame, "x: {} y: {}".format(x + xLower, y + yLower), (x + xLower, y + yLower),
+			cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, textG, textR), 1)
+		cv2.putText(frame, "x: {} y: {}".format(x + w + xLower, y + h + yLower), (x + w + xLower, y + h + yLower),
+			cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, textG, textR), 1)
 		text = "Found"
 		textR = 0
 		textG = 255
@@ -90,8 +102,8 @@ while True:
 
 	# show the frame and record if the user presses a key
 	cv2.imshow("Biscuit Cam", frame)
-	cv2.imshow("Thresh", thresh)
-	cv2.imshow("Frame Delta", frameDelta)
+	#cv2.imshow("Thresh", thresh)
+	#cv2.imshow("Frame Delta", frameDelta)
 	key = cv2.waitKey(1) & 0xFF
 
 	# if the `q` key is pressed, break from the lop
