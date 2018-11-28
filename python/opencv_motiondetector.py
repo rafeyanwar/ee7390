@@ -31,6 +31,17 @@ xUpper = 200
 yLower = 210
 yUpper = 260
 
+#
+numFramesBiscuitDetected = 0
+fps = 30
+numSecondsDetectionRequired = 1.3
+numFramesDetectionRequired = fps * numSecondsDetectionRequired
+
+frameSaved = False
+
+fourcc = cv2.VideoWriter_fourcc(*'MP4V')
+writer = None
+
 # loop over the frames of the video
 while True:
 	# grab the current frame and initialize the occupied/unoccupied
@@ -53,6 +64,7 @@ while True:
 
 	# resize the frame, draw the target area
 	frame = imutils.resize(frame, width=500)
+	height, width = frame.shape[:2]
 	cv2.rectangle(frame, (xLower, xUpper), (yLower, yUpper), (255, 255, 255), 2)
 
 	# get relevant section of image, greyscale and blur it
@@ -78,12 +90,34 @@ while True:
 		cv2.CHAIN_APPROX_SIMPLE)
 	cnts = cnts[0] if imutils.is_cv2() else cnts[1]
 
+	biscuitFound = False
 	# loop over the contours
 	for c in cnts:
 		# if the contour is too small, ignore it
 		if cv2.contourArea(c) < args["min_area"]:
+			# reset everything and save the video if necessary
+			numFramesBiscuitDetected = 0
+			frameSaved = False
+			if writer is not None:
+				print('Releasing Writer')
+				writer.release()
+				writer = None
 			continue
+		else:
+			biscuitFound = True
 
+	if biscuitFound:
+		numFramesBiscuitDetected = numFramesBiscuitDetected + 1
+		#print('Biscuit detected for ', numFramesBiscuitDetected, ' frames')
+		if numFramesBiscuitDetected > numFramesDetectionRequired:
+			if not frameSaved:
+				print('Saving image')
+				cv2.imwrite('blah.jpeg', frame)
+				frameSaved = True
+			if writer is None:
+				print('Creating Writer')
+				writer = cv2.VideoWriter('test.mp4', fourcc, 30, (width, height), True)
+			writer.write(frame)
 		# compute the bounding box for the contour, draw it on the frame,
 		# and update the text
 		(x, y, w, h) = cv2.boundingRect(c)
