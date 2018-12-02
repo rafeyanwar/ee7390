@@ -16,9 +16,9 @@ from email import encoders
 
 # Function for emailing meal time and image
 def sendEmail(meal):
-	senderEmail = 'bisccam7390@gmail.com'
-	senderPassword = 'h3ll0world'
-	recipientEmail = 'rafeyanwar94@gmail.com'
+	senderEmail = ''
+	senderPassword = ''
+	recipientEmail = ''
 
 	subject = "Biscuit has eaten at {0}".format(meal.timestamp)
 
