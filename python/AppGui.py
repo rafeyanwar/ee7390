@@ -51,9 +51,11 @@ grid.addWidget(mealSelector, 1, 0)
 # Create a label indicating the last feeding times
 refreshButton = QPushButton('Refresh')
 def on_refreshButton_clicked():
+	mealLog = None
 	mealLog = MealLog("log.txt")
 	mealSelector = QComboBox()
 	mealSelector.addItems(mealLog.getMeals())
+	print('Refreshing')
 refreshButton.clicked.connect(on_refreshButton_clicked)
 grid.addWidget(refreshButton, 0, 0)
 refreshButton.show()

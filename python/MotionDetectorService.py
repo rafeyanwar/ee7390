@@ -16,9 +16,10 @@ from email import encoders
 
 # Function for emailing meal time and image
 def sendEmail(meal):
-	senderEmail = ''
+	print('Sending email')
+	senderEmail = 'bisccam7390@gmail.com'
 	senderPassword = ''
-	recipientEmail = ''
+	recipientEmail = 'rafeyanwar94@gmail.com'
 
 	subject = "Biscuit has eaten at {0}".format(meal.timestamp)
 
@@ -27,7 +28,7 @@ def sendEmail(meal):
 	msg['To'] = recipientEmail
 	msg['Subject'] = subject
 
-	thumbnailFile = "MealImages/{0}".format(meal.getThumbnailFileName())
+	thumbnailFile = "MealVideos/{0}".format(meal.getVideoFileName())
 	attachment  = open(thumbnailFile, 'rb')
 	part = MIMEBase('application','octet-stream')
 	part.set_payload((attachment).read())
@@ -41,6 +42,7 @@ def sendEmail(meal):
 
 	server.sendmail(senderEmail,recipientEmail,text)
 	server.quit()
+	print('Email sent')
 
 print('Starting Program')
 
@@ -50,7 +52,7 @@ ap.add_argument("-a", "--min-area", type=int, default=500, help="minimum area si
 args = vars(ap.parse_args())
 
 if args.get("video", None) is None:
-	vs = VideoStream(src=1).start()
+	vs = VideoStream(src=0).start()
 	time.sleep(2.0)
 	print('Using a video stream.')
 
@@ -62,6 +64,7 @@ else:
 # Flag for showing motion detection during development
 # During normal operation, set to False
 showProcessing = True
+shouldEmail = True
 
 # Parse meal log
 mealLog = MealLog("log.txt")
@@ -78,17 +81,24 @@ yUpper = 260
 # Parameters to tweak sensitivity of detector
 numFramesBiscuitDetected = 0
 fps = 30
-numSecondsDetectionRequired = 10
+numSecondsDetectionRequired = 3
 numFramesDetectionRequired = fps * numSecondsDetectionRequired
 
 # Mp4 writer options
-fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+fourcc = cv2.VideoWriter_fourcc(*'MJPG')
 writer = None
+thisMeal = None
 
 frameSaved = False
-
+frameCounter = 1
+frameSkipThreshold = 20
 # Main loop to process each frame
 while True:
+	frameCounter = frameCounter + 1
+	if frameCounter < frameSkipThreshold:
+			continue
+
+	frameCounter = 1                
 	# Take the next frame
 	frame = vs.read()
 	frame = frame if args.get("video", None) is None else frame[1]
@@ -118,8 +128,8 @@ while True:
 	feederSection = frame[yLower:yUpper, xLower:xUpper]
 	gray = cv2.cvtColor(feederSection, cv2.COLOR_BGR2GRAY)
 	gray = cv2.GaussianBlur(gray, (21, 21), 0)
-	if showProcessing:
-		cv2.imshow("feedersection", feederSection)
+	#if showProcessing:
+		#cv2.imshow("feedersection", feederSection)
 
 	# Set the first/reference frame
 	if firstFrame is None:
@@ -147,6 +157,9 @@ while True:
 				print('Closing and saving video.')
 				writer.release()
 				writer = None
+				if shouldEmail:
+					sendEmail(thisMeal)
+				thisMeal = None
 			continue
 		else:
 			biscuitFound = True
@@ -163,7 +176,7 @@ while True:
 				frameSaved = True
 				mealLog.addMeal(thisMeal)
 				mealLog.writeToFile()
-				sendEmail(thisMeal)
+
 			if writer is None:
 				writer = cv2.VideoWriter("MealVideos/{0}".format(thisMeal.getVideoFileName()), fourcc, 30, (width, height), True)
 			writer.write(frame)
@@ -183,8 +196,8 @@ while True:
 		# Draw what the detector is seeing
 		cv2.putText(frame, "Biscuit Status: {}".format(text), (10, 20), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, textG, textR), 2)
 		cv2.imshow("Biscuit Cam", frame)
-		#cv2.imshow("Thresh", thresh)
-		#cv2.imshow("Frame Delta", frameDelta)
+		#cv2.imshow("Thresholded Difference", thresh)
+		#cv2.imshow("Absolute Difference", frameDelta)
 
 	# Exit loop if user types 'q'
 	key = cv2.waitKey(1) & 0xFF
