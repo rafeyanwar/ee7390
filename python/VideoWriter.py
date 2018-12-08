@@ -1,3 +1,4 @@
+#NOTE: this class not used in application. It was used to test saving videos.
 from imutils.video import VideoStream
 import argparse
 import datetime
